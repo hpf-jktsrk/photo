@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PNG 图片压缩工具</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace">
+        <div class="brand">
+          <div>
+            <p class="eyebrow">PNG Compressor</p>
+            <h1>图片压缩</h1>
+          </div>
+          <div class="summary" aria-live="polite">
+            <span id="fileCount">0 个文件</span>
+            <strong id="savedTotal">等待处理</strong>
+          </div>
+        </div>
+
+        <div class="tool-grid">
+          <section class="drop-panel" id="dropZone">
+            <input id="fileInput" type="file" accept="image/png" multiple>
+            <div class="drop-art" aria-hidden="true">
+              <svg viewBox="0 0 120 120" role="img">
+                <rect x="19" y="24" width="82" height="72" rx="8"></rect>
+                <path d="M32 76l18-22 15 18 10-12 17 16"></path>
+                <circle cx="76" cy="45" r="8"></circle>
+              </svg>
+            </div>
+            <button class="primary-action" id="pickFiles" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h3.7l2 2H18a2 2 0 0 1 2 2v1.2H4V6.5Zm0 4.2h16l-1.1 6.7A3 3 0 0 1 16 20H8a3 3 0 0 1-2.9-2.6L4 10.7Z"></path>
+              </svg>
+              选择 PNG
+            </button>
+            <p>拖入 PNG 文件</p>
+          </section>
+
+          <section class="controls" aria-label="压缩设置">
+            <label class="field">
+              <span>像素比例</span>
+              <div class="range-row">
+                <input id="scaleRange" type="range" min="10" max="100" step="5" value="80">
+                <output id="scaleValue" for="scaleRange">80%</output>
+              </div>
+            </label>
+
+            <div class="size-row">
+              <label class="field">
+                <span>最大宽度</span>
+                <input id="maxWidth" type="number" min="1" step="1" placeholder="不限">
+              </label>
+              <label class="field">
+                <span>最大高度</span>
+                <input id="maxHeight" type="number" min="1" step="1" placeholder="不限">
+              </label>
+            </div>
+
+            <label class="field">
+              <span>优化方式</span>
+              <select id="optimizeMode">
+                <option value="reencode">标准优化</option>
+                <option value="colors">颜色优化</option>
+                <option value="strong">强力优化</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>颜色数量</span>
+              <div class="segmented" role="radiogroup" aria-label="颜色数量">
+                <input id="c256" name="colors" type="radio" value="256" checked>
+                <label for="c256">256</label>
+                <input id="c128" name="colors" type="radio" value="128">
+                <label for="c128">128</label>
+                <input id="c64" name="colors" type="radio" value="64">
+                <label for="c64">64</label>
+                <input id="c32" name="colors" type="radio" value="32">
+                <label for="c32">32</label>
+              </div>
+            </label>
+
+            <div class="switch-row">
+              <label class="switch">
+                <input id="keepSmaller" type="checkbox" checked>
+                <span></span>
+                仅保存更小结果
+              </label>
+            </div>
+
+            <div class="button-row">
+              <button class="icon-button" id="pickFolder" type="button" title="选择输出文件夹" aria-label="选择输出文件夹">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h3.7l2 2H18a2 2 0 0 1 2 2v1.2H4V6.5Zm0 4.2h16l-1.1 6.7A3 3 0 0 1 16 20H8a3 3 0 0 1-2.9-2.6L4 10.7Z"></path>
+                </svg>
+              </button>
+              <button class="run-button" id="compressButton" type="button" disabled>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m5 12 5 5L20 7l-1.8-1.8L10 13.4 6.8 10.2 5 12Z"></path>
+                </svg>
+                <span>开始压缩</span>
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <section class="results" aria-label="压缩结果">
+          <div class="results-head">
+            <h2>处理列表</h2>
+            <button class="text-button" id="clearButton" type="button" disabled>清空</button>
+          </div>
+          <div id="resultsList" class="results-list">
+            <div class="empty-state">暂无 PNG 文件</div>
+          </div>
+        </section>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
