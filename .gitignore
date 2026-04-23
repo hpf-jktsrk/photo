@@ -1,0 +1,7 @@
+.dotnet-home/
+desktop/bin/
+desktop/obj/
+dist/windows/*.dll
+dist/windows/*.pdb
+dist/windows/*.json
+dist/windows-framework/

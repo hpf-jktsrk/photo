@@ -1,6 +1,26 @@
 # PNG 图片压缩工具
 
-一个本地运行的 PNG 压缩 UI 程序。双击 `index.html` 即可在浏览器中使用，不需要上传图片，也不需要安装依赖。
+一个本地运行的 PNG 压缩 UI 程序，包含 Windows 桌面版和浏览器版。图片处理都在本机完成，不会上传文件。
+
+## Windows 桌面版
+
+已打包好的程序在：
+
+```text
+dist/windows/图片压缩.exe
+```
+
+双击运行后，可以添加或拖入 `.png` 文件，选择输出文件夹，再点击“开始压缩”。
+
+桌面版是轻量框架依赖包，需要电脑已安装 .NET 10 Desktop Runtime。如果需要重新打包，运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build-windows.ps1
+```
+
+## 浏览器版
+
+双击 `index.html` 即可在浏览器中使用，不需要上传图片，也不需要安装依赖。
 
 ## 功能
 
@@ -12,7 +32,7 @@
 - 支持预览压缩前后尺寸、体积和压缩率
 - 支持浏览器下载，支持现代 Chromium 浏览器选择输出文件夹
 
-## 使用
+## 浏览器版使用
 
 1. 打开 `index.html`
 2. 选择或拖入 PNG 文件
