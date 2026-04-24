@@ -7,6 +7,7 @@ const scaleValue = document.querySelector("#scaleValue");
 const maxWidthInput = document.querySelector("#maxWidth");
 const maxHeightInput = document.querySelector("#maxHeight");
 const optimizeMode = document.querySelector("#optimizeMode");
+const outputFormat = document.querySelector("#outputFormat");
 const keepSmaller = document.querySelector("#keepSmaller");
 const compressButton = document.querySelector("#compressButton");
 const clearButton = document.querySelector("#clearButton");
@@ -137,7 +138,7 @@ async function compressAll() {
     updateRow(index, { status: "处理中", meta: `${formatBytes(file.size)} -> ...` });
 
     try {
-      const result = await compressPng(file);
+      const result = await compressImage(file);
       const shouldUseOriginal = keepSmaller.checked && result.blob.size >= file.size;
       const finalBlob = shouldUseOriginal ? file : result.blob;
       outputTotal += finalBlob.size;
@@ -159,7 +160,7 @@ async function compressAll() {
       updateRow(index, {
         status: "失败",
         meta: formatBytes(file.size),
-        detail: error.message || "无法处理该 PNG",
+        detail: error.message || "无法处理该图片",
         error: true
       });
     }
@@ -169,7 +170,7 @@ async function compressAll() {
   setRunning(false);
 }
 
-async function compressPng(file) {
+async function compressImage(file) {
   const image = await loadImage(file);
   const target = getTargetSize(image.naturalWidth, image.naturalHeight);
   const canvas = document.createElement("canvas");
@@ -190,7 +191,8 @@ async function compressPng(file) {
     trimTransparentRgb(ctx, canvas.width, canvas.height);
   }
 
-  const blob = await canvasToBlob(canvas);
+  const format = outputFormat.value;
+  const blob = await canvasToBlob(canvas, format);
   URL.revokeObjectURL(image.src);
 
   return {
@@ -199,7 +201,7 @@ async function compressPng(file) {
     inputHeight: image.naturalHeight,
     outputWidth: target.width,
     outputHeight: target.height,
-    outputName: buildOutputName(file.name)
+    outputName: buildOutputName(file.name, format)
   };
 }
 
@@ -269,15 +271,18 @@ function loadImage(file) {
   });
 }
 
-function canvasToBlob(canvas) {
+function canvasToBlob(canvas, format) {
+  const mimeType = format === "webp" ? "image/webp" : "image/png";
+  const quality = format === "webp" ? 0.88 : undefined;
+
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob) {
         resolve(blob);
       } else {
-        reject(new Error("PNG 编码失败"));
+        reject(new Error(`${format.toUpperCase()} 编码失败`));
       }
-    }, "image/png");
+    }, mimeType, quality);
   });
 }
 
@@ -329,8 +334,9 @@ function getSelectedColorCount() {
   return Number(checked?.value || 256);
 }
 
-function buildOutputName(name) {
-  return name.replace(/\.png$/i, "") + ".compressed.png";
+function buildOutputName(name, format) {
+  const baseName = name.replace(/\.png$/i, "");
+  return `${baseName}.compressed.${format}`;
 }
 
 function formatBytes(bytes) {
@@ -352,7 +358,7 @@ function formatBytes(bytes) {
 
 function formatRatio(original, output) {
   if (!original || !output) {
-    return "0%";
+    return "节省 0%";
   }
 
   const saved = Math.max(0, 1 - output / original);

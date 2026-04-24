@@ -2,12 +2,14 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace PngCompressorDesktop;
 
 internal static class Program
 {
     [STAThread]
+    [SupportedOSPlatform("windows10.0.17763")]
     private static void Main()
     {
         Application.EnableVisualStyles();
@@ -16,6 +18,7 @@ internal static class Program
     }
 }
 
+[SupportedOSPlatform("windows10.0.17763")]
 internal sealed class MainForm : Form
 {
     private readonly Button addButton = new();
@@ -27,6 +30,7 @@ internal sealed class MainForm : Form
     private readonly NumericUpDown maxHeightInput = new();
     private readonly ComboBox optimizeMode = new();
     private readonly ComboBox colorCount = new();
+    private readonly ComboBox outputFormat = new();
     private readonly CheckBox keepSmaller = new();
     private readonly DataGridView fileGrid = new();
     private readonly ProgressBar progressBar = new();
@@ -39,8 +43,8 @@ internal sealed class MainForm : Form
 
     public MainForm()
     {
-        Text = "PNG 图片压缩工具";
-        MinimumSize = new Size(920, 620);
+        Text = "图片压缩工具";
+        MinimumSize = new Size(980, 620);
         StartPosition = FormStartPosition.CenterScreen;
         Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Regular);
 
@@ -81,11 +85,11 @@ internal sealed class MainForm : Form
             Margin = new Padding(0, 0, 0, 12),
         };
         settings.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        settings.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 82));
+        settings.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 96));
         settings.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        settings.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
+        settings.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
         settings.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        settings.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
+        settings.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
         settings.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         settings.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         root.Controls.Add(settings, 0, 1);
@@ -104,6 +108,11 @@ internal sealed class MainForm : Form
         colorCount.SelectedIndex = 0;
         colorCount.Width = 86;
 
+        outputFormat.DropDownStyle = ComboBoxStyle.DropDownList;
+        outputFormat.Items.AddRange(["PNG", "WebP"]);
+        outputFormat.SelectedIndex = 0;
+        outputFormat.Width = 92;
+
         keepSmaller.Text = "仅保存更小结果";
         keepSmaller.Checked = true;
         keepSmaller.AutoSize = true;
@@ -118,7 +127,9 @@ internal sealed class MainForm : Form
         settings.Controls.Add(optimizeMode, 7, 0);
         settings.Controls.Add(MakeLabel("颜色数量"), 0, 1);
         settings.Controls.Add(colorCount, 1, 1);
-        settings.Controls.Add(keepSmaller, 2, 1);
+        settings.Controls.Add(MakeLabel("导出格式"), 2, 1);
+        settings.Controls.Add(outputFormat, 3, 1);
+        settings.Controls.Add(keepSmaller, 4, 1);
         settings.SetColumnSpan(keepSmaller, 2);
 
         var actions = new FlowLayoutPanel
@@ -232,7 +243,7 @@ internal sealed class MainForm : Form
         fileGrid.Columns.Add("saved", "压缩率");
         fileGrid.Columns.Add("status", "状态");
         fileGrid.Columns["file"]!.FillWeight = 220;
-        fileGrid.Columns["status"]!.FillWeight = 140;
+        fileGrid.Columns["status"]!.FillWeight = 160;
     }
 
     private void AddFiles()
@@ -352,6 +363,9 @@ internal sealed class MainForm : Form
             MaxHeight: (int)maxHeightInput.Value,
             Mode: (OptimizationMode)optimizeMode.SelectedIndex,
             ColorCount: int.Parse((string)colorCount.SelectedItem!),
+            Format: ((string)outputFormat.SelectedItem!).Equals("WebP", StringComparison.OrdinalIgnoreCase)
+                ? ExportFormat.Webp
+                : ExportFormat.Png,
             KeepOnlySmaller: keepSmaller.Checked);
     }
 
@@ -392,11 +406,12 @@ internal sealed class MainForm : Form
         summaryLabel.Text = files.Count == 0 ? "拖入 PNG 或点击“添加 PNG”开始" : $"已添加 {files.Count} 个 PNG";
     }
 
+    [SupportedOSPlatform("windows10.0.17763")]
     private static CompressionResult CompressOne(string sourcePath, string outputDirectory, CompressionOptions options)
     {
         using var source = new Bitmap(sourcePath);
         var targetSize = GetTargetSize(source.Width, source.Height, options);
-        using var resized = Resize(source, targetSize.Width, targetSize.Height);
+        using var resized = ResizeBitmap(source, targetSize.Width, targetSize.Height);
 
         if (options.Mode is OptimizationMode.Color or OptimizationMode.Strong)
         {
@@ -409,11 +424,11 @@ internal sealed class MainForm : Form
         }
 
         var originalBytes = new FileInfo(sourcePath).Length;
-        var outputName = Path.GetFileNameWithoutExtension(sourcePath) + ".compressed.png";
+        var outputName = BuildOutputName(sourcePath, options.Format);
         var outputPath = Path.Combine(outputDirectory, outputName);
 
         using var memory = new MemoryStream();
-        resized.Save(memory, ImageFormat.Png);
+        SaveBitmap(resized, memory, options.Format);
         var outputBytes = memory.Length;
 
         if (options.KeepOnlySmaller && outputBytes >= originalBytes)
@@ -439,6 +454,24 @@ internal sealed class MainForm : Form
             "完成");
     }
 
+    private static string BuildOutputName(string sourcePath, ExportFormat format)
+    {
+        var extension = format == ExportFormat.Webp ? "webp" : "png";
+        return $"{Path.GetFileNameWithoutExtension(sourcePath)}.compressed.{extension}";
+    }
+
+    [SupportedOSPlatform("windows10.0.17763")]
+    private static void SaveBitmap(Bitmap bitmap, Stream output, ExportFormat format)
+    {
+        if (format == ExportFormat.Webp)
+        {
+            bitmap.Save(output, ImageFormat.Webp);
+            return;
+        }
+
+        bitmap.Save(output, ImageFormat.Png);
+    }
+
     private static Size GetTargetSize(int width, int height, CompressionOptions options)
     {
         var scale = options.ScalePercent / 100.0;
@@ -451,7 +484,7 @@ internal sealed class MainForm : Form
             Math.Max(1, (int)Math.Round(height * finalScale)));
     }
 
-    private static Bitmap Resize(Bitmap source, int width, int height)
+    private static Bitmap ResizeBitmap(Bitmap source, int width, int height)
     {
         var resized = new Bitmap(width, height, PixelFormat.Format32bppArgb);
         resized.SetResolution(source.HorizontalResolution, source.VerticalResolution);
@@ -566,12 +599,19 @@ internal enum OptimizationMode
     Strong,
 }
 
+internal enum ExportFormat
+{
+    Png,
+    Webp,
+}
+
 internal sealed record CompressionOptions(
     int ScalePercent,
     int MaxWidth,
     int MaxHeight,
     OptimizationMode Mode,
     int ColorCount,
+    ExportFormat Format,
     bool KeepOnlySmaller);
 
 internal sealed record CompressionResult(
